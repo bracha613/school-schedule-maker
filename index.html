@@ -10,88 +10,207 @@
     <div class="container">
         <h1>School Schedule Maker</h1>
         
-        <div class="main-content">
-            <!-- Input Section -->
-            <div class="input-section">
-                <h2>Add Teachers & Classes</h2>
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="mode-select">Mode Selection</button>
+            <button class="tab-btn" data-tab="manual">Manual Mode</button>
+            <button class="tab-btn" data-tab="template">Template Mode</button>
+        </div>
+        
+        <!-- Mode Selection Tab -->
+        <div id="mode-select" class="tab-content active">
+            <div class="mode-selection">
+                <h2>Choose Your Scheduling Mode</h2>
                 
-                <!-- Teacher Input -->
-                <div class="form-group">
-                    <label for="teacherName">Teacher Name:</label>
-                    <input type="text" id="teacherName" placeholder="e.g., John Smith">
+                <div class="mode-card">
+                    <div class="mode-icon">📋</div>
+                    <h3>Manual Mode</h3>
+                    <p>Add teachers and let the system automatically generate an optimal schedule based on availability and constraints.</p>
+                    <button class="btn btn-primary" onclick="switchMode('manual')">Select Manual Mode</button>
                 </div>
                 
-                <div class="form-group">
-                    <label for="className">Class Name:</label>
-                    <input type="text" id="className" placeholder="e.g., Mathematics 101">
+                <div class="mode-card">
+                    <div class="mode-icon">📅</div>
+                    <h3>Template Mode</h3>
+                    <p>Define your fixed class schedule first (times and breaks), then assign teachers to specific time slots based on their availability.</p>
+                    <button class="btn btn-success" onclick="switchMode('template')">Select Template Mode</button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="duration">Class Duration (hours):</label>
-                    <input type="number" id="duration" placeholder="e.g., 1.5" min="0.5" step="0.5">
-                </div>
-                
-                <div class="form-group">
-                    <label>Availability Time Slots:</label>
-                    <div class="time-slots">
-                        <div>
-                            <label for="availStart">From:</label>
-                            <input type="time" id="availStart" value="08:00">
+            </div>
+        </div>
+        
+        <!-- Manual Mode Tab -->
+        <div id="manual" class="tab-content">
+            <div class="main-content">
+                <!-- Input Section -->
+                <div class="input-section">
+                    <h2>Add Teachers & Classes</h2>
+                    
+                    <!-- Teacher Input -->
+                    <div class="form-group">
+                        <label for="teacherName">Teacher Name:</label>
+                        <input type="text" id="teacherName" placeholder="e.g., John Smith">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="className">Class Name:</label>
+                        <input type="text" id="className" placeholder="e.g., Mathematics 101">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Class Duration (hours):</label>
+                        <input type="number" id="duration" placeholder="e.g., 1.5" min="0.5" step="0.5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Availability Time Slots:</label>
+                        <div class="time-slots">
+                            <div>
+                                <label for="availStart">From:</label>
+                                <input type="time" id="availStart" value="08:00">
+                            </div>
+                            <div>
+                                <label for="availEnd">To:</label>
+                                <input type="time" id="availEnd" value="17:00">
+                            </div>
                         </div>
-                        <div>
-                            <label for="availEnd">To:</label>
-                            <input type="time" id="availEnd" value="17:00">
+                    </div>
+                    
+                    <button id="addTeacherBtn" class="btn btn-primary">Add Teacher & Class</button>
+                </div>
+                
+                <!-- Teachers List Section -->
+                <div class="teachers-section">
+                    <h2>Teachers & Classes</h2>
+                    <div id="teachersList" class="teachers-list"></div>
+                </div>
+                
+                <!-- Constraints Section -->
+                <div class="constraints-section">
+                    <h2>Add Constraints</h2>
+                    <p class="section-info">Set conditions like "Teacher X cannot teach at time Y"</p>
+                    
+                    <div class="form-group">
+                        <label for="constraintTeacher">Select Teacher:</label>
+                        <select id="constraintTeacher">
+                            <option value="">-- Select a teacher --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="constraintType">Constraint Type:</label>
+                        <select id="constraintType">
+                            <option value="unavailable">Teacher Unavailable</option>
+                            <option value="mustbefore">Class must finish before time</option>
+                            <option value="mustafter">Class must start after time</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="timeConstraintGroup">
+                        <label for="constraintTime">Time:</label>
+                        <input type="time" id="constraintTime" value="12:00">
+                    </div>
+                    
+                    <button id="addConstraintBtn" class="btn btn-secondary">Add Constraint</button>
+                </div>
+                
+                <!-- Constraints List -->
+                <div class="constraints-list-section">
+                    <h3>Active Constraints</h3>
+                    <div id="constraintsList" class="constraints-list"></div>
+                </div>
+                
+                <!-- Generate Schedule Button -->
+                <div class="generate-section">
+                    <button id="generateScheduleBtn" class="btn btn-success btn-large">Generate Schedule</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Template Mode Tab -->
+        <div id="template" class="tab-content">
+            <div class="template-content">
+                <!-- Fixed Schedule Template Section -->
+                <div class="template-setup">
+                    <h2>Define Your School Schedule Template</h2>
+                    <p class="section-info">Create a fixed schedule with specific class times and breaks. Teachers will be assigned to these slots.</p>
+                    
+                    <div class="template-input-section">
+                        <h3>Add Time Slots</h3>
+                        
+                        <div class="form-group">
+                            <label for="slotName">Slot Name (e.g., Period 1, Lunch Break):</label>
+                            <input type="text" id="slotName" placeholder="e.g., Period 1">
                         </div>
+                        
+                        <div class="form-group">
+                            <label>Time Range:</label>
+                            <div class="time-slots">
+                                <div>
+                                    <label for="slotStart">From:</label>
+                                    <input type="time" id="slotStart" value="08:00">
+                                </div>
+                                <div>
+                                    <label for="slotEnd">To:</label>
+                                    <input type="time" id="slotEnd" value="09:30">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="slotType">Slot Type:</label>
+                            <select id="slotType">
+                                <option value="class">Class/Lesson</option>
+                                <option value="break">Break</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="free">Free Period</option>
+                            </select>
+                        </div>
+                        
+                        <button id="addSlotBtn" class="btn btn-primary">Add Time Slot</button>
+                    </div>
+                    
+                    <!-- Template Preview -->
+                    <div class="template-preview">
+                        <h3>Daily Schedule Template</h3>
+                        <div id="templateSlotsList" class="template-slots-list"></div>
                     </div>
                 </div>
                 
-                <button id="addTeacherBtn" class="btn btn-primary">Add Teacher & Class</button>
-            </div>
-            
-            <!-- Teachers List Section -->
-            <div class="teachers-section">
-                <h2>Teachers & Classes</h2>
-                <div id="teachersList" class="teachers-list"></div>
-            </div>
-            
-            <!-- Constraints Section -->
-            <div class="constraints-section">
-                <h2>Add Constraints</h2>
-                <p class="section-info">Set conditions like "Teacher X cannot teach at time Y"</p>
-                
-                <div class="form-group">
-                    <label for="constraintTeacher">Select Teacher:</label>
-                    <select id="constraintTeacher">
-                        <option value="">-- Select a teacher --</option>
-                    </select>
+                <!-- Teachers Assignment Section -->
+                <div class="teachers-assignment">
+                    <h2>Add Teachers & Assign to Slots</h2>
+                    <p class="section-info">Add teachers and select which time slots they can teach</p>
+                    
+                    <div class="teacher-assignment-input">
+                        <div class="form-group">
+                            <label for="templateTeacherName">Teacher Name:</label>
+                            <input type="text" id="templateTeacherName" placeholder="e.g., John Smith">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="templateClassName">Class Name:</label>
+                            <input type="text" id="templateClassName" placeholder="e.g., Mathematics 101">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Select Available Slots:</label>
+                            <div id="slotsChecklist" class="slots-checklist"></div>
+                        </div>
+                        
+                        <button id="addTemplateTeacherBtn" class="btn btn-primary">Add Teacher</button>
+                    </div>
+                    
+                    <!-- Template Teachers List -->
+                    <div class="template-teachers-list">
+                        <h3>Teachers & Assignments</h3>
+                        <div id="templateTeachersList" class="teachers-list"></div>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="constraintType">Constraint Type:</label>
-                    <select id="constraintType">
-                        <option value="unavailable">Teacher Unavailable</option>
-                        <option value="mustbefore">Class must finish before time</option>
-                        <option value="mustafter">Class must start after time</option>
-                    </select>
+                <!-- Generate Template Schedule -->
+                <div class="generate-section">
+                    <button id="generateTemplateScheduleBtn" class="btn btn-success btn-large">Generate Final Schedule</button>
                 </div>
-                
-                <div class="form-group" id="timeConstraintGroup">
-                    <label for="constraintTime">Time:</label>
-                    <input type="time" id="constraintTime" value="12:00">
-                </div>
-                
-                <button id="addConstraintBtn" class="btn btn-secondary">Add Constraint</button>
-            </div>
-            
-            <!-- Constraints List -->
-            <div class="constraints-list-section">
-                <h3>Active Constraints</h3>
-                <div id="constraintsList" class="constraints-list"></div>
-            </div>
-            
-            <!-- Generate Schedule Button -->
-            <div class="generate-section">
-                <button id="generateScheduleBtn" class="btn btn-success btn-large">Generate Schedule</button>
             </div>
         </div>
         
