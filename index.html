@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Schedule Maker</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>School Schedule Maker</h1>
+        <h1>📚 School Schedule Maker</h1>
         
         <!-- Tab Navigation -->
         <div class="tab-navigation">
@@ -21,18 +22,19 @@
         <div id="mode-select" class="tab-content active">
             <div class="mode-selection">
                 <h2>Choose Your Scheduling Mode</h2>
+                <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px;">Select how you want to create your school schedule</p>
                 
                 <div class="mode-card">
                     <div class="mode-icon">📋</div>
                     <h3>Manual Mode</h3>
-                    <p>Add teachers and let the system automatically generate an optimal schedule based on availability and constraints.</p>
+                    <p>Add teachers and let the system automatically generate an optimal schedule based on availability and constraints. Perfect for flexible scheduling.</p>
                     <button class="btn btn-primary" onclick="switchMode('manual')">Select Manual Mode</button>
                 </div>
                 
                 <div class="mode-card">
                     <div class="mode-icon">📅</div>
                     <h3>Template Mode</h3>
-                    <p>Define your fixed class schedule first (times and breaks), then assign teachers to specific time slots based on their availability.</p>
+                    <p>Define your fixed class schedule first (times and breaks), then assign teachers to specific time slots. Best for traditional school schedules.</p>
                     <button class="btn btn-success" onclick="switchMode('template')">Select Template Mode</button>
                 </div>
             </div>
@@ -41,24 +43,59 @@
         <!-- Manual Mode Tab -->
         <div id="manual" class="tab-content">
             <div class="main-content">
-                <!-- Input Section -->
+                <!-- Grade & Class Management -->
                 <div class="input-section">
-                    <h2>Add Teachers & Classes</h2>
+                    <h2>📚 Manage Grades & Classes</h2>
                     
-                    <!-- Teacher Input -->
+                    <div class="form-group">
+                        <label for="gradeName">Grade Name:</label>
+                        <input type="text" id="gradeName" placeholder="e.g., Grade 1, Middle School">
+                    </div>
+                    
+                    <button id="addGradeBtn" class="btn btn-primary">Add Grade</button>
+                    
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                    
+                    <div class="form-group">
+                        <label for="gradeSelect">Select Grade:</label>
+                        <select id="gradeSelect">
+                            <option value="">-- Select a grade --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="className">Class Name:</label>
+                        <input type="text" id="className" placeholder="e.g., Class 1-A, Section B">
+                    </div>
+                    
+                    <button id="addClassBtn" class="btn btn-primary">Add Class to Grade</button>
+                </div>
+                
+                <!-- Grades & Classes Display -->
+                <div class="teachers-section">
+                    <h2>📖 Grades & Classes</h2>
+                    <div id="gradesList" class="grades-list"></div>
+                </div>
+                
+                <!-- Teachers Input -->
+                <div class="input-section" style="grid-row: 3 / 4;">
+                    <h2>👨‍🏫 Add Teachers</h2>
+                    
+                    <div class="form-group">
+                        <label for="teacherGradeSelect">Select Class:</label>
+                        <select id="teacherGradeSelect">
+                            <option value="">-- Select a class --</option>
+                        </select>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="teacherName">Teacher Name:</label>
                         <input type="text" id="teacherName" placeholder="e.g., John Smith">
                     </div>
                     
                     <div class="form-group">
-                        <label for="className">Class Name:</label>
-                        <input type="text" id="className" placeholder="e.g., Mathematics 101">
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="duration">Class Duration (hours):</label>
-                        <input type="number" id="duration" placeholder="e.g., 1.5" min="0.5" step="0.5">
+                        <input type="number" id="duration" placeholder="e.g., 1.5" min="0.5" step="0.5" value="1">
                     </div>
                     
                     <div class="form-group">
@@ -75,18 +112,18 @@
                         </div>
                     </div>
                     
-                    <button id="addTeacherBtn" class="btn btn-primary">Add Teacher & Class</button>
+                    <button id="addTeacherBtn" class="btn btn-primary">Add Teacher</button>
                 </div>
                 
-                <!-- Teachers List Section -->
-                <div class="teachers-section">
-                    <h2>Teachers & Classes</h2>
+                <!-- Teachers List -->
+                <div class="constraints-list-section" style="grid-row: 3 / 4;">
+                    <h2>👥 Teachers Assigned</h2>
                     <div id="teachersList" class="teachers-list"></div>
                 </div>
                 
                 <!-- Constraints Section -->
-                <div class="constraints-section">
-                    <h2>Add Constraints</h2>
+                <div class="constraints-section" style="grid-column: 1 / 2; grid-row: 4 / 5;">
+                    <h2>⚠️ Add Constraints</h2>
                     <p class="section-info">Set conditions like "Teacher X cannot teach at time Y"</p>
                     
                     <div class="form-group">
@@ -114,8 +151,8 @@
                 </div>
                 
                 <!-- Constraints List -->
-                <div class="constraints-list-section">
-                    <h3>Active Constraints</h3>
+                <div class="constraints-list-section" style="grid-column: 2 / 3; grid-row: 4 / 5;">
+                    <h2>📋 Active Constraints</h2>
                     <div id="constraintsList" class="constraints-list"></div>
                 </div>
                 
@@ -131,14 +168,14 @@
             <div class="template-content">
                 <!-- Fixed Schedule Template Section -->
                 <div class="template-setup">
-                    <h2>Define Your School Schedule Template</h2>
-                    <p class="section-info">Create a fixed schedule with specific class times and breaks. Teachers will be assigned to these slots.</p>
+                    <h2>📅 Define Schedule Template</h2>
+                    <p class="section-info">Create fixed time slots for your school day</p>
                     
                     <div class="template-input-section">
                         <h3>Add Time Slots</h3>
                         
                         <div class="form-group">
-                            <label for="slotName">Slot Name (e.g., Period 1, Lunch Break):</label>
+                            <label for="slotName">Slot Name:</label>
                             <input type="text" id="slotName" placeholder="e.g., Period 1">
                         </div>
                         
@@ -176,49 +213,95 @@
                     </div>
                 </div>
                 
-                <!-- Teachers Assignment Section -->
+                <!-- Grades & Classes for Template -->
                 <div class="teachers-assignment">
-                    <h2>Add Teachers & Assign to Slots</h2>
-                    <p class="section-info">Add teachers and select which time slots they can teach</p>
+                    <h2>📚 Grades & Classes</h2>
+                    <p class="section-info">Add your grades and classes</p>
                     
-                    <div class="teacher-assignment-input">
+                    <div class="template-input-section">
                         <div class="form-group">
-                            <label for="templateTeacherName">Teacher Name:</label>
-                            <input type="text" id="templateTeacherName" placeholder="e.g., John Smith">
+                            <label for="templateGradeName">Grade Name:</label>
+                            <input type="text" id="templateGradeName" placeholder="e.g., Grade 1">
                         </div>
-                        
+                        <button id="templateAddGradeBtn" class="btn btn-primary">Add Grade</button>
+                    </div>
+                    
+                    <div class="template-preview">
+                        <h3>Added Grades</h3>
+                        <div id="templateGradesList" class="template-slots-list"></div>
+                    </div>
+                    
+                    <div class="template-input-section">
                         <div class="form-group">
-                            <label for="templateClassName">Class Name:</label>
-                            <input type="text" id="templateClassName" placeholder="e.g., Mathematics 101">
+                            <label for="templateGradeSelect">Select Grade:</label>
+                            <select id="templateGradeSelect">
+                                <option value="">-- Select grade --</option>
+                            </select>
                         </div>
-                        
                         <div class="form-group">
-                            <label>Select Available Slots:</label>
-                            <div id="slotsChecklist" class="slots-checklist"></div>
+                            <label for="templateNewClassName">Class Name:</label>
+                            <input type="text" id="templateNewClassName" placeholder="e.g., Class A">
                         </div>
+                        <button id="templateAddClassBtn" class="btn btn-primary">Add Class</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Teachers Section for Template -->
+            <div style="grid-column: 1 / -1; margin-top: 30px;">
+                <div class="template-content">
+                    <div class="template-setup">
+                        <h2>👨‍🏫 Assign Teachers</h2>
+                        <p class="section-info">Add teachers and select their available slots</p>
                         
-                        <button id="addTemplateTeacherBtn" class="btn btn-primary">Add Teacher</button>
+                        <div class="teacher-assignment-input">
+                            <div class="form-group">
+                                <label for="templateTeacherClass">Select Class:</label>
+                                <select id="templateTeacherClass">
+                                    <option value="">-- Select class --</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="templateTeacherName">Teacher Name:</label>
+                                <input type="text" id="templateTeacherName" placeholder="e.g., John Smith">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Select Available Slots:</label>
+                                <div id="slotsChecklist" class="slots-checklist"></div>
+                            </div>
+                            
+                            <button id="addTemplateTeacherBtn" class="btn btn-primary">Add Teacher</button>
+                        </div>
                     </div>
                     
                     <!-- Template Teachers List -->
-                    <div class="template-teachers-list">
-                        <h3>Teachers & Assignments</h3>
+                    <div class="teachers-assignment">
+                        <h3>📋 Teachers Assigned</h3>
                         <div id="templateTeachersList" class="teachers-list"></div>
                     </div>
                 </div>
-                
-                <!-- Generate Template Schedule -->
-                <div class="generate-section">
-                    <button id="generateTemplateScheduleBtn" class="btn btn-success btn-large">Generate Final Schedule</button>
-                </div>
+            </div>
+            
+            <!-- Generate Template Schedule -->
+            <div class="generate-section" style="margin-top: 30px;">
+                <button id="generateTemplateScheduleBtn" class="btn btn-success btn-large">Generate Final Schedule</button>
             </div>
         </div>
         
         <!-- Schedule Output Section -->
         <div id="scheduleSection" class="schedule-section" style="display: none;">
-            <h2>Generated Schedule</h2>
+            <div class="schedule-header">
+                <h2>📊 Generated Schedule</h2>
+                <div class="export-buttons">
+                    <button id="downloadPdfBtn" class="btn btn-primary btn-small">📄 Download PDF</button>
+                    <button id="downloadCsvBtn" class="btn btn-primary btn-small">📋 Download CSV</button>
+                    <button id="printBtn" class="btn btn-primary btn-small">🖨️ Print</button>
+                </div>
+            </div>
             <div id="scheduleOutput" class="schedule-output"></div>
-            <button id="resetBtn" class="btn btn-primary">Create New Schedule</button>
+            <button id="resetBtn" class="btn btn-primary" style="margin-top: 20px;">← Create New Schedule</button>
         </div>
     </div>
     
