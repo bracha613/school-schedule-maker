@@ -23,7 +23,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     background: white;
     border-radius: var(--border-radius);
@@ -181,12 +181,12 @@ h2, h3 {
 
 .constraints-section {
     grid-column: 1 / 2;
-    grid-row: 3;
+    grid-row: 4;
 }
 
 .constraints-list-section {
     grid-column: 2 / 3;
-    grid-row: 2 / 4;
+    grid-row: 3 / 5;
 }
 
 /* Template Mode Layout */
@@ -203,19 +203,23 @@ h2, h3 {
 .template-input-section {
     background: white;
     margin-bottom: 20px;
+    padding: 15px;
 }
 
 .template-preview {
     background: white;
+    padding: 15px;
 }
 
 .teacher-assignment-input {
     background: white;
     margin-bottom: 20px;
+    padding: 15px;
 }
 
 .template-teachers-list {
     background: white;
+    padding: 15px;
 }
 
 .form-group {
@@ -319,9 +323,10 @@ input[type="checkbox"] {
 }
 
 .btn-small {
-    padding: 6px 12px;
+    padding: 8px 15px;
     font-size: 12px;
     width: auto;
+    margin-right: 5px;
 }
 
 .btn-danger {
@@ -331,6 +336,49 @@ input[type="checkbox"] {
 
 .btn-danger:hover {
     background: #c0392b;
+}
+
+/* Grades List */
+.grades-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.grade-card {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 4px solid #f39c12;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.grade-card h4 {
+    color: #f39c12;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.class-list {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+.class-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.class-item:last-child {
+    margin-bottom: 0;
 }
 
 /* Teachers List */
@@ -421,6 +469,8 @@ input[type="checkbox"] {
     padding: 15px;
     border-radius: 4px;
     border: 1px solid #bdc3c7;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .slots-checklist-item {
@@ -499,6 +549,18 @@ input[type="checkbox"] {
     background: var(--light-bg);
 }
 
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 .schedule-output {
     background: white;
     border-radius: var(--border-radius);
@@ -543,9 +605,15 @@ input[type="checkbox"] {
     font-weight: 500;
 }
 
+.schedule-table .grade {
+    font-weight: 600;
+    color: #f39c12;
+}
+
 .schedule-table .break {
     color: #95a5a6;
     font-style: italic;
+    background-color: #f8f9fa;
 }
 
 .schedule-summary {
@@ -579,8 +647,50 @@ input[type="checkbox"] {
     border-left: 4px solid var(--secondary-color);
 }
 
+/* Grade divider in schedule */
+.grade-divider {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    padding: 12px;
+    text-align: center;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+    
+    .tab-navigation,
+    .export-buttons,
+    #resetBtn,
+    .generate-section {
+        display: none;
+    }
+    
+    .container {
+        max-width: 100%;
+        box-shadow: none;
+    }
+    
+    .schedule-section {
+        padding: 0;
+        background: white;
+    }
+    
+    .schedule-output {
+        padding: 0;
+    }
+    
+    .schedule-table {
+        page-break-inside: avoid;
+    }
+}
+
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .main-content,
     .template-content {
         grid-template-columns: 1fr;
@@ -595,7 +705,9 @@ input[type="checkbox"] {
         grid-column: 1 / 2 !important;
         grid-row: auto !important;
     }
-    
+}
+
+@media (max-width: 768px) {
     h1 {
         font-size: 2em;
     }
@@ -611,5 +723,30 @@ input[type="checkbox"] {
     .tab-btn {
         font-size: 12px;
         padding: 12px 10px;
+    }
+    
+    .schedule-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .export-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .export-buttons .btn {
+        width: 100%;
+        margin-right: 0;
+    }
+    
+    .schedule-table {
+        font-size: 12px;
+    }
+    
+    .schedule-table th,
+    .schedule-table td {
+        padding: 8px;
     }
 }

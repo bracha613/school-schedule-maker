@@ -1,4 +1,6 @@
 // Data storage
+let grades = [];
+let classes = [];
 let teachers = [];
 let constraints = [];
 let schedule = [];
@@ -6,27 +8,40 @@ let templateSlots = [];
 let templateTeachers = [];
 let currentMode = 'mode-select';
 
-// DOM Elements - Manual Mode
-const teacherNameInput = document.getElementById('teacherName');
+// Grade & Class Management
+const gradeNameInput = document.getElementById('gradeName');
+const gradeSelectInput = document.getElementById('gradeSelect');
 const classNameInput = document.getElementById('className');
+const addGradeBtn = document.getElementById('addGradeBtn');
+const addClassBtn = document.getElementById('addClassBtn');
+const gradesList = document.getElementById('gradesList');
+
+// Teacher Management
+const teacherGradeSelect = document.getElementById('teacherGradeSelect');
+const teacherNameInput = document.getElementById('teacherName');
 const durationInput = document.getElementById('duration');
 const availStartInput = document.getElementById('availStart');
 const availEndInput = document.getElementById('availEnd');
 const addTeacherBtn = document.getElementById('addTeacherBtn');
 const teachersList = document.getElementById('teachersList');
 
+// Constraint Management
 const constraintTeacherSelect = document.getElementById('constraintTeacher');
 const constraintTypeSelect = document.getElementById('constraintType');
 const constraintTimeInput = document.getElementById('constraintTime');
 const addConstraintBtn = document.getElementById('addConstraintBtn');
 const constraintsList = document.getElementById('constraintsList');
 
+// Schedule Output
 const generateScheduleBtn = document.getElementById('generateScheduleBtn');
 const scheduleSection = document.getElementById('scheduleSection');
 const scheduleOutput = document.getElementById('scheduleOutput');
 const resetBtn = document.getElementById('resetBtn');
+const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+const printBtn = document.getElementById('printBtn');
 
-// DOM Elements - Template Mode
+// Template Mode Elements
 const slotNameInput = document.getElementById('slotName');
 const slotStartInput = document.getElementById('slotStart');
 const slotEndInput = document.getElementById('slotEnd');
@@ -34,8 +49,15 @@ const slotTypeSelect = document.getElementById('slotType');
 const addSlotBtn = document.getElementById('addSlotBtn');
 const templateSlotsList = document.getElementById('templateSlotsList');
 
+const templateGradeNameInput = document.getElementById('templateGradeName');
+const templateAddGradeBtn = document.getElementById('templateAddGradeBtn');
+const templateGradesList = document.getElementById('templateGradesList');
+const templateGradeSelect = document.getElementById('templateGradeSelect');
+const templateNewClassNameInput = document.getElementById('templateNewClassName');
+const templateAddClassBtn = document.getElementById('templateAddClassBtn');
+
+const templateTeacherClassSelect = document.getElementById('templateTeacherClass');
 const templateTeacherNameInput = document.getElementById('templateTeacherName');
-const templateClassNameInput = document.getElementById('templateClassName');
 const slotsChecklistDiv = document.getElementById('slotsChecklist');
 const addTemplateTeacherBtn = document.getElementById('addTemplateTeacherBtn');
 const templateTeachersList = document.getElementById('templateTeachersList');
@@ -51,35 +73,40 @@ tabBtns.forEach(btn => {
 });
 
 // Event Listeners - Manual Mode
+addGradeBtn.addEventListener('click', addGrade);
+addClassBtn.addEventListener('click', addClass);
 addTeacherBtn.addEventListener('click', addTeacher);
 addConstraintBtn.addEventListener('click', addConstraint);
 generateScheduleBtn.addEventListener('click', generateSchedule);
 resetBtn.addEventListener('click', resetScheduler);
 constraintTypeSelect.addEventListener('change', updateConstraintForm);
 
+// Event Listeners - Export
+downloadPdfBtn.addEventListener('click', downloadPDF);
+downloadCsvBtn.addEventListener('click', downloadCSV);
+printBtn.addEventListener('click', printSchedule);
+
 // Event Listeners - Template Mode
 addSlotBtn.addEventListener('click', addTemplateSlot);
+templateAddGradeBtn.addEventListener('click', addTemplateGrade);
+templateAddClassBtn.addEventListener('click', addTemplateClass);
 addTemplateTeacherBtn.addEventListener('click', addTemplateTeacher);
 generateTemplateScheduleBtn.addEventListener('click', generateTemplateSchedule);
 
-// Tab Navigation Functions
+// ==================== TAB NAVIGATION ====================
 function switchTab(tabName) {
     currentMode = tabName;
     
-    // Hide all tabs
     const allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(tab => tab.classList.remove('active'));
     
-    // Remove active class from buttons
     tabBtns.forEach(btn => btn.classList.remove('active'));
     
-    // Show selected tab
     const selectedTab = document.getElementById(tabName);
     if (selectedTab) {
         selectedTab.classList.add('active');
     }
     
-    // Mark button as active
     const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
     if (activeBtn) {
         activeBtn.classList.add('active');
@@ -87,7 +114,8 @@ function switchTab(tabName) {
 }
 
 function switchMode(mode) {
-    // Reset all data when switching modes
+    grades = [];
+    classes = [];
     teachers = [];
     constraints = [];
     schedule = [];
@@ -97,17 +125,140 @@ function switchMode(mode) {
     switchTab(mode);
 }
 
-// ==================== MANUAL MODE FUNCTIONS ====================
+// ==================== GRADES & CLASSES ====================
+
+function addGrade() {
+    const name = gradeNameInput.value.trim();
+    
+    if (!name) {
+        alert('Please enter a grade name');
+        return;
+    }
+    
+    const grade = {
+        id: Date.now(),
+        name
+    };
+    
+    grades.push(grade);
+    gradeNameInput.value = '';
+    
+    renderGrades();
+    updateGradeSelects();
+}
+
+function renderGrades() {
+    if (grades.length === 0) {
+        gradesList.innerHTML = '<div class="empty-state">No grades added yet</div>';
+        return;
+    }
+    
+    gradesList.innerHTML = grades.map(grade => {
+        const gradeClasses = classes.filter(c => c.gradeId === grade.id);
+        return `
+            <div class="grade-card">
+                <h4>${grade.name}</h4>
+                ${gradeClasses.length > 0 ? `
+                    <div class="class-list">
+                        ${gradeClasses.map(cls => `
+                            <div class="class-item">
+                                <span>${cls.name}</span>
+                                <button class="btn btn-danger btn-small" onclick="deleteClass(${cls.id})">Remove</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<p style="font-size: 13px; color: #7f8c8d;">No classes yet</p>'}
+                <button class="btn btn-danger btn-small" onclick="deleteGrade(${grade.id})" style="margin-top: 10px;">Delete Grade</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function deleteGrade(id) {
+    grades = grades.filter(g => g.id !== id);
+    classes = classes.filter(c => c.gradeId !== id);
+    teachers = teachers.filter(t => t.classId !== classes.find(c => c.gradeId === id)?.id);
+    renderGrades();
+    updateGradeSelects();
+    updateTeacherGradeSelect();
+}
+
+function addClass() {
+    const gradeId = parseInt(gradeSelectInput.value);
+    const name = classNameInput.value.trim();
+    
+    if (!gradeId || !name) {
+        alert('Please select a grade and enter a class name');
+        return;
+    }
+    
+    const cls = {
+        id: Date.now(),
+        gradeId,
+        name
+    };
+    
+    classes.push(cls);
+    classNameInput.value = '';
+    
+    renderGrades();
+    updateTeacherGradeSelect();
+}
+
+function deleteClass(id) {
+    classes = classes.filter(c => c.id !== id);
+    teachers = teachers.filter(t => t.classId !== id);
+    renderGrades();
+    updateTeacherGradeSelect();
+}
+
+function updateGradeSelects() {
+    gradeSelectInput.innerHTML = '<option value="">-- Select a grade --</option>';
+    templateGradeSelect.innerHTML = '<option value="">-- Select grade --</option>';
+    
+    grades.forEach(grade => {
+        const option1 = document.createElement('option');
+        option1.value = grade.id;
+        option1.textContent = grade.name;
+        gradeSelectInput.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = grade.id;
+        option2.textContent = grade.name;
+        templateGradeSelect.appendChild(option2);
+    });
+}
+
+function updateTeacherGradeSelect() {
+    teacherGradeSelect.innerHTML = '<option value="">-- Select a class --</option>';
+    templateTeacherClassSelect.innerHTML = '<option value="">-- Select class --</option>';
+    
+    classes.forEach(cls => {
+        const grade = grades.find(g => g.id === cls.gradeId);
+        const gradePrefix = grade ? `${grade.name} - ` : '';
+        
+        const option1 = document.createElement('option');
+        option1.value = cls.id;
+        option1.textContent = `${gradePrefix}${cls.name}`;
+        teacherGradeSelect.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = cls.id;
+        option2.textContent = `${gradePrefix}${cls.name}`;
+        templateTeacherClassSelect.appendChild(option2);
+    });
+}
+
+// ==================== MANUAL MODE - TEACHERS ====================
 
 function addTeacher() {
+    const classId = parseInt(teacherGradeSelect.value);
     const name = teacherNameInput.value.trim();
-    const className = classNameInput.value.trim();
     const duration = parseFloat(durationInput.value);
     const availStart = availStartInput.value;
     const availEnd = availEndInput.value;
     
-    // Validation
-    if (!name || !className || !duration || !availStart || !availEnd) {
+    if (!classId || !name || !duration || !availStart || !availEnd) {
         alert('Please fill in all fields');
         return;
     }
@@ -122,27 +273,22 @@ function addTeacher() {
         return;
     }
     
-    // Create teacher object
     const teacher = {
         id: Date.now(),
+        classId,
         name,
-        className,
         duration,
         availStart,
-        availEnd,
-        constraints: []
+        availEnd
     };
     
     teachers.push(teacher);
     
-    // Clear inputs
     teacherNameInput.value = '';
-    classNameInput.value = '';
     durationInput.value = '1';
     availStartInput.value = '08:00';
     availEndInput.value = '17:00';
     
-    // Update UI
     renderTeachers();
     updateConstraintTeacherSelect();
 }
@@ -153,16 +299,22 @@ function renderTeachers() {
         return;
     }
     
-    teachersList.innerHTML = teachers.map(teacher => `
-        <div class="teacher-card">
-            <h4>${teacher.name}</h4>
-            <p><strong>Class:</strong> ${teacher.className}</p>
-            <p><strong>Duration:</strong> ${teacher.duration} hours</p>
-            <p><strong>Available:</strong> ${teacher.availStart} - ${teacher.availEnd}</p>
-            <div class="badge">${teacher.constraints.length} constraint(s)</div>
-            <button class="btn btn-danger btn-small" onclick="deleteTeacher(${teacher.id})" style="margin-top: 10px;">Remove</button>
-        </div>
-    `).join('');
+    teachersList.innerHTML = teachers.map(teacher => {
+        const cls = classes.find(c => c.id === teacher.classId);
+        const grade = cls ? grades.find(g => g.id === cls.gradeId) : null;
+        const gradePrefix = grade ? `${grade.name} - ` : '';
+        const className = cls ? `${gradePrefix}${cls.name}` : 'Unknown Class';
+        
+        return `
+            <div class="teacher-card">
+                <h4>${teacher.name}</h4>
+                <p><strong>Class:</strong> ${className}</p>
+                <p><strong>Duration:</strong> ${teacher.duration} hours</p>
+                <p><strong>Available:</strong> ${teacher.availStart} - ${teacher.availEnd}</p>
+                <button class="btn btn-danger btn-small" onclick="deleteTeacher(${teacher.id})" style="margin-top: 10px;">Remove</button>
+            </div>
+        `;
+    }).join('');
 }
 
 function deleteTeacher(id) {
@@ -173,19 +325,7 @@ function deleteTeacher(id) {
     updateConstraintTeacherSelect();
 }
 
-function updateConstraintTeacherSelect() {
-    const currentValue = constraintTeacherSelect.value;
-    constraintTeacherSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
-    
-    teachers.forEach(teacher => {
-        const option = document.createElement('option');
-        option.value = teacher.id;
-        option.textContent = `${teacher.name} (${teacher.className})`;
-        constraintTeacherSelect.appendChild(option);
-    });
-    
-    constraintTeacherSelect.value = currentValue;
-}
+// ==================== CONSTRAINTS ====================
 
 function updateConstraintForm() {
     const type = constraintTypeSelect.value;
@@ -198,8 +338,22 @@ function updateConstraintForm() {
     }
 }
 
+function updateConstraintTeacherSelect() {
+    const currentValue = constraintTeacherSelect.value;
+    constraintTeacherSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
+    
+    teachers.forEach(teacher => {
+        const option = document.createElement('option');
+        option.value = teacher.id;
+        option.textContent = teacher.name;
+        constraintTeacherSelect.appendChild(option);
+    });
+    
+    constraintTeacherSelect.value = currentValue;
+}
+
 function addConstraint() {
-    const teacherId = constraintTeacherSelect.value;
+    const teacherId = parseInt(constraintTeacherSelect.value);
     const type = constraintTypeSelect.value;
     const time = constraintTimeInput.value;
     
@@ -208,10 +362,9 @@ function addConstraint() {
         return;
     }
     
-    const teacher = teachers.find(t => t.id == teacherId);
+    const teacher = teachers.find(t => t.id === teacherId);
     if (!teacher) return;
     
-    // Validation for time-based constraints
     if (type !== 'unavailable' && !time) {
         alert('Please select a time');
         return;
@@ -219,7 +372,7 @@ function addConstraint() {
     
     const constraint = {
         id: Date.now(),
-        teacherId: parseInt(teacherId),
+        teacherId,
         teacherName: teacher.name,
         type,
         time
@@ -259,7 +412,7 @@ function deleteConstraint(id) {
     renderConstraints();
 }
 
-// ==================== TEMPLATE MODE FUNCTIONS ====================
+// ==================== TEMPLATE MODE ====================
 
 function addTemplateSlot() {
     const name = slotNameInput.value.trim();
@@ -282,13 +435,11 @@ function addTemplateSlot() {
         name,
         startTime,
         endTime,
-        type,
-        assignedTeacher: null
+        type
     };
     
     templateSlots.push(slot);
     
-    // Clear inputs
     slotNameInput.value = '';
     slotStartInput.value = '08:00';
     slotEndInput.value = '09:30';
@@ -304,7 +455,6 @@ function renderTemplateSlots() {
         return;
     }
     
-    // Sort by time
     const sorted = [...templateSlots].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
     
     templateSlotsList.innerHTML = sorted.map(slot => `
@@ -343,12 +493,69 @@ function updateSlotsChecklist() {
     `).join('');
 }
 
-function addTemplateTeacher() {
-    const name = templateTeacherNameInput.value.trim();
-    const className = templateClassNameInput.value.trim();
+function addTemplateGrade() {
+    const name = templateGradeNameInput.value.trim();
     
-    if (!name || !className) {
-        alert('Please fill in all fields');
+    if (!name) {
+        alert('Please enter a grade name');
+        return;
+    }
+    
+    const grade = {
+        id: Date.now(),
+        name
+    };
+    
+    grades.push(grade);
+    templateGradeNameInput.value = '';
+    
+    renderTemplateGrades();
+    updateGradeSelects();
+}
+
+function renderTemplateGrades() {
+    if (grades.length === 0) {
+        templateGradesList.innerHTML = '<div class="empty-state">No grades added yet</div>';
+        return;
+    }
+    
+    templateGradesList.innerHTML = grades.map(grade => `
+        <div class="template-slot-item">
+            <div class="slot-info">
+                <span>${grade.name}</span>
+            </div>
+            <button class="btn btn-danger btn-small" onclick="deleteGrade(${grade.id})">Remove</button>
+        </div>
+    `).join('');
+}
+
+function addTemplateClass() {
+    const gradeId = parseInt(templateGradeSelect.value);
+    const name = templateNewClassNameInput.value.trim();
+    
+    if (!gradeId || !name) {
+        alert('Please select a grade and enter a class name');
+        return;
+    }
+    
+    const cls = {
+        id: Date.now(),
+        gradeId,
+        name
+    };
+    
+    classes.push(cls);
+    templateNewClassNameInput.value = '';
+    
+    updateTeacherGradeSelect();
+}
+
+function addTemplateTeacher() {
+    const classId = parseInt(templateTeacherClassSelect.value);
+    const name = templateTeacherNameInput.value.trim();
+    
+    if (!classId || !name) {
+        alert('Please select a class and enter teacher name');
         return;
     }
     
@@ -362,16 +569,14 @@ function addTemplateTeacher() {
     
     const teacher = {
         id: Date.now(),
+        classId,
         name,
-        className,
         availableSlotIds
     };
     
     templateTeachers.push(teacher);
     
-    // Clear inputs
     templateTeacherNameInput.value = '';
-    templateClassNameInput.value = '';
     document.querySelectorAll('.slot-checkbox').forEach(box => box.checked = false);
     
     renderTemplateTeachers();
@@ -392,7 +597,6 @@ function renderTemplateTeachers() {
         return `
             <div class="teacher-card">
                 <h4>${teacher.name}</h4>
-                <p><strong>Class:</strong> ${teacher.className}</p>
                 <p><strong>Available Slots:</strong> ${slots}</p>
                 <button class="btn btn-danger btn-small" onclick="deleteTemplateTeacher(${teacher.id})" style="margin-top: 10px;">Remove</button>
             </div>
@@ -405,115 +609,7 @@ function deleteTemplateTeacher(id) {
     renderTemplateTeachers();
 }
 
-function generateTemplateSchedule() {
-    if (templateSlots.length === 0 || templateTeachers.length === 0) {
-        alert('Please add both time slots and teachers');
-        return;
-    }
-    
-    schedule = [];
-    const classSlots = templateSlots.filter(s => s.type === 'class');
-    const assignedSlots = new Set();
-    
-    // Try to assign each teacher to a slot
-    for (let teacher of templateTeachers) {
-        let assigned = false;
-        
-        // Find an available slot that this teacher can teach
-        for (let slotId of teacher.availableSlotIds) {
-            if (!assignedSlots.has(slotId)) {
-                const slot = templateSlots.find(s => s.id === slotId);
-                
-                schedule.push({
-                    slotId,
-                    slotName: slot.name,
-                    startTime: slot.startTime,
-                    endTime: slot.endTime,
-                    teacherName: teacher.name,
-                    className: teacher.className,
-                    type: 'class'
-                });
-                
-                assignedSlots.add(slotId);
-                assigned = true;
-                break;
-            }
-        }
-        
-        if (!assigned) {
-            alert(`Warning: Could not find an available slot for ${teacher.name} (${teacher.className}). All their preferred slots are already assigned.`);
-        }
-    }
-    
-    // Add breaks and other non-class slots
-    for (let slot of templateSlots) {
-        if (slot.type !== 'class') {
-            schedule.push({
-                slotId: slot.id,
-                slotName: slot.name,
-                startTime: slot.startTime,
-                endTime: slot.endTime,
-                teacherName: '-',
-                className: '-',
-                type: slot.type
-            });
-        }
-    }
-    
-    // Sort by start time
-    schedule.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
-    
-    displayTemplateSchedule();
-}
-
-function displayTemplateSchedule() {
-    let html = `
-        <div class="schedule-summary">
-            <p><strong>Classes Assigned:</strong> ${schedule.filter(s => s.type === 'class').length} / ${templateTeachers.length}</p>
-            <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-        </div>
-    `;
-    
-    if (schedule.length === 0) {
-        html += '<div class="error">No schedule could be generated.</div>';
-    } else {
-        html += `
-            <table class="schedule-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Period</th>
-                        <th>Teacher</th>
-                        <th>Class</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        for (let item of schedule) {
-            const rowClass = item.type === 'class' ? '' : 'break';
-            html += `
-                <tr>
-                    <td class="time">${item.startTime} - ${item.endTime}</td>
-                    <td>${item.slotName}</td>
-                    <td class="teacher ${rowClass}">${item.type === 'class' ? item.teacherName : '-'}</td>
-                    <td class="class ${rowClass}">${item.type === 'class' ? item.className : item.slotName}</td>
-                </tr>
-            `;
-        }
-        
-        html += `
-                </tbody>
-            </table>
-        `;
-    }
-    
-    scheduleOutput.innerHTML = html;
-    scheduleSection.style.display = 'block';
-    scheduleSection.scrollIntoView({ behavior: 'smooth' });
-}
-
-// ==================== UTILITY FUNCTIONS ====================
+// ==================== SCHEDULE GENERATION ====================
 
 function timeToMinutes(time) {
     const [hours, minutes] = time.split(':').map(Number);
@@ -532,12 +628,10 @@ function canPlaceClass(teacher, startTime) {
     const availStartMinutes = timeToMinutes(teacher.availStart);
     const availEndMinutes = timeToMinutes(teacher.availEnd);
     
-    // Check if within availability window
     if (startMinutes < availStartMinutes || endMinutes > availEndMinutes) {
         return false;
     }
     
-    // Check constraints
     for (let constraint of constraints) {
         if (constraint.teacherId !== teacher.id) continue;
         
@@ -556,14 +650,12 @@ function canPlaceClass(teacher, startTime) {
         }
     }
     
-    // Check if teacher already has a class at this time
     for (let scheduled of schedule) {
         if (scheduled.teacherId !== teacher.id) continue;
         
         const scheduledStart = timeToMinutes(scheduled.startTime);
         const scheduledEnd = scheduledStart + (scheduled.duration * 60);
         
-        // Check for overlap
         if ((startMinutes < scheduledEnd) && (endMinutes > scheduledStart)) {
             return false;
         }
@@ -574,32 +666,34 @@ function canPlaceClass(teacher, startTime) {
 
 function generateSchedule() {
     if (teachers.length === 0) {
-        alert('Please add at least one teacher and class');
+        alert('Please add at least one teacher');
         return;
     }
     
     schedule = [];
-    const schoolStart = 8 * 60; // 8:00 AM in minutes
-    const schoolEnd = 17 * 60; // 5:00 PM in minutes
+    const schoolStart = 8 * 60;
+    const schoolEnd = 17 * 60;
     
-    // Try to place each class
     for (let teacher of teachers) {
         let placed = false;
         const availStartMinutes = timeToMinutes(teacher.availStart);
         const availEndMinutes = timeToMinutes(teacher.availEnd);
         const classDurationMinutes = teacher.duration * 60;
         
-        // Try each 30-minute slot
         for (let timeSlot = Math.max(schoolStart, availStartMinutes); 
              timeSlot + classDurationMinutes <= Math.min(schoolEnd, availEndMinutes);
              timeSlot += 30) {
             
             const time = minutesToTime(timeSlot);
             if (canPlaceClass(teacher, time)) {
+                const cls = classes.find(c => c.id === teacher.classId);
+                const grade = cls ? grades.find(g => g.id === cls.gradeId) : null;
+                
                 schedule.push({
                     teacherId: teacher.id,
                     teacherName: teacher.name,
-                    className: teacher.className,
+                    className: cls?.name || 'Unknown',
+                    gradeName: grade?.name || 'Unknown',
                     startTime: time,
                     duration: teacher.duration
                 });
@@ -609,11 +703,10 @@ function generateSchedule() {
         }
         
         if (!placed) {
-            alert(`Warning: Could not place class for ${teacher.name} (${teacher.className}) due to constraints or conflicts.`);
+            alert(`Warning: Could not place class for ${teacher.name}`);
         }
     }
     
-    // Sort by start time
     schedule.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
     
     displaySchedule();
@@ -622,13 +715,13 @@ function generateSchedule() {
 function displaySchedule() {
     let html = `
         <div class="schedule-summary">
-            <p><strong>Total Classes Scheduled:</strong> ${schedule.length} / ${teachers.length}</p>
-            <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Classes Scheduled:</strong> ${schedule.length} / ${teachers.length}</p>
+            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
         </div>
     `;
     
     if (schedule.length === 0) {
-        html += '<div class="error">No classes could be scheduled with the current constraints.</div>';
+        html += '<div class="error">No schedule generated.</div>';
     } else {
         html += `
             <table class="schedule-table">
@@ -636,9 +729,9 @@ function displaySchedule() {
                     <tr>
                         <th>Time</th>
                         <th>End Time</th>
-                        <th>Teacher</th>
+                        <th>Grade</th>
                         <th>Class</th>
-                        <th>Duration</th>
+                        <th>Teacher</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -653,17 +746,14 @@ function displaySchedule() {
                 <tr>
                     <td class="time">${item.startTime}</td>
                     <td class="time">${endTime}</td>
-                    <td class="teacher">${item.teacherName}</td>
+                    <td class="grade">${item.gradeName}</td>
                     <td class="class">${item.className}</td>
-                    <td>${item.duration} hours</td>
+                    <td class="teacher">${item.teacherName}</td>
                 </tr>
             `;
         }
         
-        html += `
-                </tbody>
-            </table>
-        `;
+        html += `</tbody></table>`;
     }
     
     scheduleOutput.innerHTML = html;
@@ -671,32 +761,170 @@ function displaySchedule() {
     scheduleSection.scrollIntoView({ behavior: 'smooth' });
 }
 
+function generateTemplateSchedule() {
+    if (templateSlots.length === 0 || templateTeachers.length === 0) {
+        alert('Please add both time slots and teachers');
+        return;
+    }
+    
+    schedule = [];
+    const assignedSlots = new Set();
+    
+    for (let teacher of templateTeachers) {
+        let assigned = false;
+        
+        for (let slotId of teacher.availableSlotIds) {
+            if (!assignedSlots.has(slotId)) {
+                const slot = templateSlots.find(s => s.id === slotId);
+                const cls = classes.find(c => c.id === teacher.classId);
+                const grade = cls ? grades.find(g => g.id === cls.gradeId) : null;
+                
+                schedule.push({
+                    slotId,
+                    slotName: slot.name,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    teacherName: teacher.name,
+                    className: cls?.name || 'Unknown',
+                    gradeName: grade?.name || 'Unknown',
+                    type: 'class'
+                });
+                
+                assignedSlots.add(slotId);
+                assigned = true;
+                break;
+            }
+        }
+        
+        if (!assigned) {
+            alert(`Warning: Could not find available slot for ${teacher.name}`);
+        }
+    }
+    
+    for (let slot of templateSlots) {
+        if (slot.type !== 'class') {
+            schedule.push({
+                slotId: slot.id,
+                slotName: slot.name,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                teacherName: '-',
+                className: '-',
+                gradeName: '-',
+                type: slot.type
+            });
+        }
+    }
+    
+    schedule.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    
+    displayTemplateSchedule();
+}
+
+function displayTemplateSchedule() {
+    let html = `
+        <div class="schedule-summary">
+            <p><strong>Classes Assigned:</strong> ${schedule.filter(s => s.type === 'class').length} / ${templateTeachers.length}</p>
+            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+    `;
+    
+    if (schedule.length === 0) {
+        html += '<div class="error">No schedule generated.</div>';
+    } else {
+        html += `
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Period</th>
+                        <th>Grade</th>
+                        <th>Class</th>
+                        <th>Teacher</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        for (let item of schedule) {
+            const rowClass = item.type === 'class' ? '' : 'break';
+            html += `
+                <tr>
+                    <td class="time">${item.startTime} - ${item.endTime}</td>
+                    <td>${item.slotName}</td>
+                    <td class="grade ${rowClass}">${item.type === 'class' ? item.gradeName : '-'}</td>
+                    <td class="class ${rowClass}">${item.type === 'class' ? item.className : item.slotName}</td>
+                    <td class="teacher ${rowClass}">${item.type === 'class' ? item.teacherName : '-'}</td>
+                </tr>
+            `;
+        }
+        
+        html += `</tbody></table>`;
+    }
+    
+    scheduleOutput.innerHTML = html;
+    scheduleSection.style.display = 'block';
+    scheduleSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ==================== EXPORT FUNCTIONS ====================
+
+function downloadPDF() {
+    const element = document.getElementById('scheduleOutput');
+    const opt = {
+        margin: 10,
+        filename: 'school_schedule.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+    };
+    html2pdf().set(opt).from(element).save();
+}
+
+function downloadCSV() {
+    let csv = 'Time,End Time,Grade,Class,Teacher\n';
+    
+    for (let item of schedule) {
+        if (item.type === 'class' || item.gradeName === '-') {
+            const startMinutes = item.duration ? timeToMinutes(item.startTime) : null;
+            const endMinutes = startMinutes ? startMinutes + (item.duration * 60) : null;
+            const endTime = endMinutes ? minutesToTime(endMinutes) : item.endTime;
+            
+            csv += `"${item.startTime}","${endTime}","${item.gradeName}","${item.className}","${item.teacherName}"\n`;
+        }
+    }
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'school_schedule.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printSchedule() {
+    window.print();
+}
+
 function resetScheduler() {
-    if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+    if (confirm('Reset all data?')) {
+        grades = [];
+        classes = [];
         teachers = [];
         constraints = [];
         schedule = [];
         templateSlots = [];
         templateTeachers = [];
         
-        teacherNameInput.value = '';
-        classNameInput.value = '';
-        durationInput.value = '1';
-        availStartInput.value = '08:00';
-        availEndInput.value = '17:00';
-        constraintTeacherSelect.value = '';
-        constraintTimeInput.value = '12:00';
-        
-        renderTeachers();
-        renderConstraints();
-        updateConstraintTeacherSelect();
         scheduleSection.style.display = 'none';
-        
         switchTab('mode-select');
     }
 }
 
 // Initial render
+renderGrades();
 renderTeachers();
 renderConstraints();
 updateConstraintForm();
+updateGradeSelects();
