@@ -2,8 +2,11 @@
 let teachers = [];
 let constraints = [];
 let schedule = [];
+let templateSlots = [];
+let templateTeachers = [];
+let currentMode = 'mode-select';
 
-// DOM Elements
+// DOM Elements - Manual Mode
 const teacherNameInput = document.getElementById('teacherName');
 const classNameInput = document.getElementById('className');
 const durationInput = document.getElementById('duration');
@@ -23,14 +26,79 @@ const scheduleSection = document.getElementById('scheduleSection');
 const scheduleOutput = document.getElementById('scheduleOutput');
 const resetBtn = document.getElementById('resetBtn');
 
-// Event Listeners
+// DOM Elements - Template Mode
+const slotNameInput = document.getElementById('slotName');
+const slotStartInput = document.getElementById('slotStart');
+const slotEndInput = document.getElementById('slotEnd');
+const slotTypeSelect = document.getElementById('slotType');
+const addSlotBtn = document.getElementById('addSlotBtn');
+const templateSlotsList = document.getElementById('templateSlotsList');
+
+const templateTeacherNameInput = document.getElementById('templateTeacherName');
+const templateClassNameInput = document.getElementById('templateClassName');
+const slotsChecklistDiv = document.getElementById('slotsChecklist');
+const addTemplateTeacherBtn = document.getElementById('addTemplateTeacherBtn');
+const templateTeachersList = document.getElementById('templateTeachersList');
+const generateTemplateScheduleBtn = document.getElementById('generateTemplateScheduleBtn');
+
+// Tab Navigation
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const tabName = e.target.getAttribute('data-tab');
+        switchTab(tabName);
+    });
+});
+
+// Event Listeners - Manual Mode
 addTeacherBtn.addEventListener('click', addTeacher);
 addConstraintBtn.addEventListener('click', addConstraint);
 generateScheduleBtn.addEventListener('click', generateSchedule);
 resetBtn.addEventListener('click', resetScheduler);
 constraintTypeSelect.addEventListener('change', updateConstraintForm);
 
-// Functions
+// Event Listeners - Template Mode
+addSlotBtn.addEventListener('click', addTemplateSlot);
+addTemplateTeacherBtn.addEventListener('click', addTemplateTeacher);
+generateTemplateScheduleBtn.addEventListener('click', generateTemplateSchedule);
+
+// Tab Navigation Functions
+function switchTab(tabName) {
+    currentMode = tabName;
+    
+    // Hide all tabs
+    const allTabs = document.querySelectorAll('.tab-content');
+    allTabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Remove active class from buttons
+    tabBtns.forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Mark button as active
+    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+}
+
+function switchMode(mode) {
+    // Reset all data when switching modes
+    teachers = [];
+    constraints = [];
+    schedule = [];
+    templateSlots = [];
+    templateTeachers = [];
+    
+    switchTab(mode);
+}
+
+// ==================== MANUAL MODE FUNCTIONS ====================
+
 function addTeacher() {
     const name = teacherNameInput.value.trim();
     const className = classNameInput.value.trim();
@@ -190,6 +258,262 @@ function deleteConstraint(id) {
     constraints = constraints.filter(c => c.id !== id);
     renderConstraints();
 }
+
+// ==================== TEMPLATE MODE FUNCTIONS ====================
+
+function addTemplateSlot() {
+    const name = slotNameInput.value.trim();
+    const startTime = slotStartInput.value;
+    const endTime = slotEndInput.value;
+    const type = slotTypeSelect.value;
+    
+    if (!name || !startTime || !endTime) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    if (startTime >= endTime) {
+        alert('Start time must be before end time');
+        return;
+    }
+    
+    const slot = {
+        id: Date.now(),
+        name,
+        startTime,
+        endTime,
+        type,
+        assignedTeacher: null
+    };
+    
+    templateSlots.push(slot);
+    
+    // Clear inputs
+    slotNameInput.value = '';
+    slotStartInput.value = '08:00';
+    slotEndInput.value = '09:30';
+    slotTypeSelect.value = 'class';
+    
+    renderTemplateSlots();
+    updateSlotsChecklist();
+}
+
+function renderTemplateSlots() {
+    if (templateSlots.length === 0) {
+        templateSlotsList.innerHTML = '<div class="empty-state">No time slots added yet</div>';
+        return;
+    }
+    
+    // Sort by time
+    const sorted = [...templateSlots].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    
+    templateSlotsList.innerHTML = sorted.map(slot => `
+        <div class="template-slot-item ${slot.type}">
+            <div class="slot-info">
+                <span class="slot-time">${slot.startTime} - ${slot.endTime}</span>
+                <span>${slot.name}</span>
+                <span class="slot-type">${slot.type}</span>
+            </div>
+            <button class="btn btn-danger btn-small" onclick="deleteTemplateSlot(${slot.id})">Remove</button>
+        </div>
+    `).join('');
+}
+
+function deleteTemplateSlot(id) {
+    templateSlots = templateSlots.filter(s => s.id !== id);
+    renderTemplateSlots();
+    updateSlotsChecklist();
+}
+
+function updateSlotsChecklist() {
+    const classSlots = templateSlots.filter(s => s.type === 'class');
+    
+    if (classSlots.length === 0) {
+        slotsChecklistDiv.innerHTML = '<div class="empty-state">Add class time slots first</div>';
+        return;
+    }
+    
+    slotsChecklistDiv.innerHTML = classSlots.map(slot => `
+        <div class="slots-checklist-item">
+            <label>
+                <input type="checkbox" value="${slot.id}" class="slot-checkbox">
+                ${slot.name} (${slot.startTime} - ${slot.endTime})
+            </label>
+        </div>
+    `).join('');
+}
+
+function addTemplateTeacher() {
+    const name = templateTeacherNameInput.value.trim();
+    const className = templateClassNameInput.value.trim();
+    
+    if (!name || !className) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const checkedBoxes = Array.from(document.querySelectorAll('.slot-checkbox:checked'));
+    const availableSlotIds = checkedBoxes.map(box => parseInt(box.value));
+    
+    if (availableSlotIds.length === 0) {
+        alert('Please select at least one available slot');
+        return;
+    }
+    
+    const teacher = {
+        id: Date.now(),
+        name,
+        className,
+        availableSlotIds
+    };
+    
+    templateTeachers.push(teacher);
+    
+    // Clear inputs
+    templateTeacherNameInput.value = '';
+    templateClassNameInput.value = '';
+    document.querySelectorAll('.slot-checkbox').forEach(box => box.checked = false);
+    
+    renderTemplateTeachers();
+}
+
+function renderTemplateTeachers() {
+    if (templateTeachers.length === 0) {
+        templateTeachersList.innerHTML = '<div class="empty-state">No teachers added yet</div>';
+        return;
+    }
+    
+    templateTeachersList.innerHTML = templateTeachers.map(teacher => {
+        const slots = teacher.availableSlotIds.map(id => {
+            const slot = templateSlots.find(s => s.id === id);
+            return slot ? slot.name : '';
+        }).join(', ');
+        
+        return `
+            <div class="teacher-card">
+                <h4>${teacher.name}</h4>
+                <p><strong>Class:</strong> ${teacher.className}</p>
+                <p><strong>Available Slots:</strong> ${slots}</p>
+                <button class="btn btn-danger btn-small" onclick="deleteTemplateTeacher(${teacher.id})" style="margin-top: 10px;">Remove</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function deleteTemplateTeacher(id) {
+    templateTeachers = templateTeachers.filter(t => t.id !== id);
+    renderTemplateTeachers();
+}
+
+function generateTemplateSchedule() {
+    if (templateSlots.length === 0 || templateTeachers.length === 0) {
+        alert('Please add both time slots and teachers');
+        return;
+    }
+    
+    schedule = [];
+    const classSlots = templateSlots.filter(s => s.type === 'class');
+    const assignedSlots = new Set();
+    
+    // Try to assign each teacher to a slot
+    for (let teacher of templateTeachers) {
+        let assigned = false;
+        
+        // Find an available slot that this teacher can teach
+        for (let slotId of teacher.availableSlotIds) {
+            if (!assignedSlots.has(slotId)) {
+                const slot = templateSlots.find(s => s.id === slotId);
+                
+                schedule.push({
+                    slotId,
+                    slotName: slot.name,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    teacherName: teacher.name,
+                    className: teacher.className,
+                    type: 'class'
+                });
+                
+                assignedSlots.add(slotId);
+                assigned = true;
+                break;
+            }
+        }
+        
+        if (!assigned) {
+            alert(`Warning: Could not find an available slot for ${teacher.name} (${teacher.className}). All their preferred slots are already assigned.`);
+        }
+    }
+    
+    // Add breaks and other non-class slots
+    for (let slot of templateSlots) {
+        if (slot.type !== 'class') {
+            schedule.push({
+                slotId: slot.id,
+                slotName: slot.name,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                teacherName: '-',
+                className: '-',
+                type: slot.type
+            });
+        }
+    }
+    
+    // Sort by start time
+    schedule.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    
+    displayTemplateSchedule();
+}
+
+function displayTemplateSchedule() {
+    let html = `
+        <div class="schedule-summary">
+            <p><strong>Classes Assigned:</strong> ${schedule.filter(s => s.type === 'class').length} / ${templateTeachers.length}</p>
+            <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+    `;
+    
+    if (schedule.length === 0) {
+        html += '<div class="error">No schedule could be generated.</div>';
+    } else {
+        html += `
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Period</th>
+                        <th>Teacher</th>
+                        <th>Class</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        for (let item of schedule) {
+            const rowClass = item.type === 'class' ? '' : 'break';
+            html += `
+                <tr>
+                    <td class="time">${item.startTime} - ${item.endTime}</td>
+                    <td>${item.slotName}</td>
+                    <td class="teacher ${rowClass}">${item.type === 'class' ? item.teacherName : '-'}</td>
+                    <td class="class ${rowClass}">${item.type === 'class' ? item.className : item.slotName}</td>
+                </tr>
+            `;
+        }
+        
+        html += `
+                </tbody>
+            </table>
+        `;
+    }
+    
+    scheduleOutput.innerHTML = html;
+    scheduleSection.style.display = 'block';
+    scheduleSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ==================== UTILITY FUNCTIONS ====================
 
 function timeToMinutes(time) {
     const [hours, minutes] = time.split(':').map(Number);
@@ -352,6 +676,8 @@ function resetScheduler() {
         teachers = [];
         constraints = [];
         schedule = [];
+        templateSlots = [];
+        templateTeachers = [];
         
         teacherNameInput.value = '';
         classNameInput.value = '';
@@ -365,6 +691,8 @@ function resetScheduler() {
         renderConstraints();
         updateConstraintTeacherSelect();
         scheduleSection.style.display = 'none';
+        
+        switchTab('mode-select');
     }
 }
 
